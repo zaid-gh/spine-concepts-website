@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-default {
+    @apply bg-custom-logo-aqua text-custom-bg-gray px-6 py-3 rounded-full shadow-xl h-12 w-32 text-sm flex items-center justify-center;
+  }
+  .btn-icon-small {
+    @apply w-8 h-8 flex items-center justify-center bg-custom-logo-aqua rounded-full shadow-xl;
+  }
+}
+
+@layer utilities {
+  .nav-link {
+    @apply px-3 py-1 rounded-full bg-transparent hover:bg-custom-bg-gray hover:shadow-xl transition-all duration-200;
+  }
+  .underline-transition {
+    @apply text-custom-logo-aqua no-underline transition-all duration-200;
+  }
+  @keyframes float-fade {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    50% {
+      transform: translateY(8px);
+      opacity: 1;
+    }
+  }
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 60s linear infinite;
+  }
+  @media (max-width: 1024px) {
+    .animate-marquee {
+      animation-duration: 60s;
+    }
+  }
+
+  .animate-float-fade {
+    animation: float-fade 2s ease-in-out infinite;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
