@@ -98,7 +98,7 @@ const ContactInfoSubmit = () => {
           />
         </div>
 
-        {/* Message (sin icono flotante, UX más limpio) */}
+        {/* Message */}
         <div>
           <textarea
             id="message"
