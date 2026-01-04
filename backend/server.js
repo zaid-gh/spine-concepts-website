@@ -12,14 +12,20 @@ if (!process.env.RESEND_API_KEY) {
   console.error("RESEND_API_KEY is missing in environment variables");
 }
 
+const TO_EMAIL = "pdforthodoxo@gmail.com";
+
+const FROM_EMAIL = "Spine Concepts <contact@spine-concepts.com>";
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// --- Middlewares ---
 app.use(
   cors({
     origin: [
-      process.env.FRONTEND_URL || "https://spine-concepts.com",
+      "https://spine-concepts.com",
       "https://www.spine-concepts.com",
-    ],
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
     methods: ["POST", "GET", "OPTIONS"],
   })
 );
@@ -36,7 +42,7 @@ app.get("/health", (req, res) => {
 });
 
 app.post("/send-email", async (req, res) => {
-  const { name, email, message } = req.body;
+  const { name, email, message } = req.body ?? {};
 
   if (!name || !email || !message) {
     return res.status(400).json({
@@ -45,22 +51,42 @@ app.post("/send-email", async (req, res) => {
     });
   }
 
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+  if (!emailOk) {
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid email address",
+    });
+  }
+
   try {
     const result = await resend.emails.send({
-      from: "Spine Concepts <onboarding@resend.dev>",
-      to: "pdforthodoxo@gmail.com",
-      reply_to: email,
-      subject: `Nuevo mensaje desde Spine Concepts`,
+      from: FROM_EMAIL,
+      to: TO_EMAIL,
+      reply_to: String(email).trim(),
+      subject: `Nuevo mensaje desde Spine Concepts — ${String(name).trim()}`,
       html: `
-        <h2>Nuevo mensaje del formulario</h2>
-        <p><strong>Nombre:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Mensaje:</strong></p>
-        <p>${message}</p>
+        <div style="font-family: Arial, sans-serif; line-height: 1.4;">
+          <h2>Nuevo mensaje del formulario</h2>
+          <p><strong>Nombre:</strong> ${escapeHtml(String(name).trim())}</p>
+          <p><strong>Email:</strong> ${escapeHtml(String(email).trim())}</p>
+          <p><strong>Mensaje:</strong></p>
+          <p style="white-space: pre-wrap;">${escapeHtml(
+            String(message).trim()
+          )}</p>
+        </div>
       `,
     });
 
-    console.log("✅ Resend result:", result);
+    if (result?.error) {
+      console.error("Resend error:", result.error);
+      return res.status(502).json({
+        ok: false,
+        error: result.error.message || "Resend error",
+      });
+    }
+
+    console.log("Resend success:", result);
 
     return res.status(200).json({
       ok: true,
@@ -69,7 +95,6 @@ app.post("/send-email", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending email with Resend:", error);
-
     return res.status(500).json({
       ok: false,
       error: error?.message || "Error sending email",
@@ -78,6 +103,15 @@ app.post("/send-email", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`Modo: ${process.env.NODE_ENV || "development"}`);
+  console.log(`Server running in http://localhost:${PORT}`);
+  console.log(`Mode: ${process.env.NODE_ENV || "development"}`);
 });
+
+function escapeHtml(str) {
+  return str
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
