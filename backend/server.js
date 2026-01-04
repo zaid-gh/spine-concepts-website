@@ -13,12 +13,10 @@ if (!process.env.RESEND_API_KEY) {
 }
 
 const TO_EMAIL = "pdforthodoxo@gmail.com";
-
 const FROM_EMAIL = "Spine Concepts <contact@spine-concepts.com>";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// --- Middlewares ---
 app.use(
   cors({
     origin: [
@@ -47,12 +45,13 @@ app.post("/send-email", async (req, res) => {
   if (!name || !email || !message) {
     return res.status(400).json({
       ok: false,
-      error: "Missing required fields: name, email, or message",
+      error: "Missing required fields",
     });
   }
 
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
-  if (!emailOk) {
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+
+  if (!emailIsValid) {
     return res.status(400).json({
       ok: false,
       error: "Invalid email address",
@@ -64,13 +63,13 @@ app.post("/send-email", async (req, res) => {
       from: FROM_EMAIL,
       to: TO_EMAIL,
       reply_to: String(email).trim(),
-      subject: `Nuevo mensaje desde Spine Concepts — ${String(name).trim()}`,
+      subject: `New message from Spine Concepts — ${String(name).trim()}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.4;">
-          <h2>Nuevo mensaje del formulario</h2>
-          <p><strong>Nombre:</strong> ${escapeHtml(String(name).trim())}</p>
+          <h2>New contact form message</h2>
+          <p><strong>Name:</strong> ${escapeHtml(String(name).trim())}</p>
           <p><strong>Email:</strong> ${escapeHtml(String(email).trim())}</p>
-          <p><strong>Mensaje:</strong></p>
+          <p><strong>Message:</strong></p>
           <p style="white-space: pre-wrap;">${escapeHtml(
             String(message).trim()
           )}</p>
@@ -79,14 +78,11 @@ app.post("/send-email", async (req, res) => {
     });
 
     if (result?.error) {
-      console.error("Resend error:", result.error);
       return res.status(502).json({
         ok: false,
-        error: result.error.message || "Resend error",
+        error: result.error.message || "Email service error",
       });
     }
-
-    console.log("Resend success:", result);
 
     return res.status(200).json({
       ok: true,
@@ -94,17 +90,16 @@ app.post("/send-email", async (req, res) => {
       resend: result,
     });
   } catch (error) {
-    console.error("Error sending email with Resend:", error);
     return res.status(500).json({
       ok: false,
-      error: error?.message || "Error sending email",
+      error: error?.message || "Internal server error",
     });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running in http://localhost:${PORT}`);
-  console.log(`Mode: ${process.env.NODE_ENV || "development"}`);
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
 function escapeHtml(str) {
