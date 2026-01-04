@@ -5,13 +5,44 @@ const API_URL =
   import.meta?.env?.VITE_API_URL ||
   "https://spine-concepts-website.onrender.com";
 
+const Field = ({ id, label, iconSrc, children, error, touched }) => {
+  const showError = touched && error;
+
+  return (
+    <div className="w-full">
+      <label
+        htmlFor={id}
+        className="block text-xs font-medium text-neutral-600 mb-2"
+      >
+        {label}
+      </label>
+
+      <div className="relative">
+        {iconSrc ? (
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <img src={iconSrc} alt="" className="w-5 h-5 opacity-60" />
+          </div>
+        ) : null}
+
+        {children}
+      </div>
+
+      <div className="mt-2 min-h-[18px]">
+        {showError ? <p className="text-xs text-red-600">{error}</p> : null}
+      </div>
+    </div>
+  );
+};
+
 const ContactInfoSubmit = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     message: "",
   });
+
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
+
   const [touched, setTouched] = useState({
     name: false,
     email: false,
@@ -20,13 +51,17 @@ const ContactInfoSubmit = () => {
 
   const errors = useMemo(() => {
     const e = {};
+
     if (!formData.name.trim()) e.name = "Please enter your name.";
+
     if (!formData.email.trim()) e.email = "Please enter your email.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()))
       e.email = "Please enter a valid email.";
+
     if (!formData.message.trim()) e.message = "Please write a message.";
     else if (formData.message.trim().length < 10)
       e.message = "Please add a bit more detail (min 10 characters).";
+
     return e;
   }, [formData]);
 
@@ -51,47 +86,23 @@ const ContactInfoSubmit = () => {
     if (!isValid || isSending) return;
 
     setStatus("sending");
+
     try {
       const res = await axios.post(`${API_URL}/send-email`, formData, {
         timeout: 15000,
       });
+
       if (!res?.data?.ok) throw new Error(res?.data?.error || "Send failed");
+
       setStatus("success");
       setFormData({ name: "", email: "", message: "" });
       setTouched({ name: false, email: false, message: false });
+
       setTimeout(() => setStatus("idle"), 4000);
     } catch (err) {
       console.error(err);
       setStatus("error");
     }
-  };
-
-  const Field = ({ id, label, iconSrc, children, error }) => {
-    const showError = touched[id] && error;
-    return (
-      <div className="w-full">
-        <label
-          htmlFor={id}
-          className="block text-xs font-medium text-neutral-600 mb-2"
-        >
-          {label}
-        </label>
-
-        <div className="relative">
-          {iconSrc ? (
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <img src={iconSrc} alt="" className="w-5 h-5 opacity-60" />
-            </div>
-          ) : null}
-
-          {children}
-        </div>
-
-        <div className="mt-2 min-h-[18px]">
-          {showError ? <p className="text-xs text-red-600">{error}</p> : null}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -126,6 +137,7 @@ const ContactInfoSubmit = () => {
               label="Full name"
               iconSrc="/assets/images/icon/user.svg"
               error={errors.name}
+              touched={touched.name}
             >
               <input
                 id="name"
@@ -158,6 +170,7 @@ const ContactInfoSubmit = () => {
               label="Email address"
               iconSrc="/assets/images/icon/email.svg"
               error={errors.email}
+              touched={touched.email}
             >
               <input
                 id="email"
@@ -186,7 +199,12 @@ const ContactInfoSubmit = () => {
             </Field>
           </div>
 
-          <Field id="message" label="Message" error={errors.message}>
+          <Field
+            id="message"
+            label="Message"
+            error={errors.message}
+            touched={touched.message}
+          >
             <textarea
               id="message"
               placeholder="Write your message..."
